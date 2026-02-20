@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.env
+.env.local
+.env.*.local
+cypress/videos/
+cypress/screenshots/
+*.tar.gz
+.DS_Store
+*.log
+npm-debug.log*
