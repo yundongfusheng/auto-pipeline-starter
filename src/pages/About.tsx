@@ -37,7 +37,8 @@ export default function About() {
       <div className="mt-10 text-center">
         <Link
           to="/"
-          className="inline-block bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors"
+          aria-label="返回首页"
+          className="inline-block bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors"
         >
           返回首页
         </Link>
