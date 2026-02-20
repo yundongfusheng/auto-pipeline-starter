@@ -6,7 +6,8 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
-PRD_FILE="docs/PRD.md"
+# 支持可选参数：./auto.sh [prd路径]（默认 docs/PRD.md）
+PRD_FILE="${1:-docs/PRD.md}"
 LOG_FILE="scripts/auto.log"
 
 # ── 颜色输出 ──────────────────────────────────────────────────────────────────
@@ -49,6 +50,8 @@ ${PRD_CONTENT}
 PROMPT
 )"
 
+# 若在 Claude Code session 内调用，需 unset CLAUDECODE 才能嵌套运行
+unset CLAUDECODE
 claude \
   --allowedTools "Edit,Write,Read,Bash,Glob,Grep,MultiEdit" \
   --output-format text \
