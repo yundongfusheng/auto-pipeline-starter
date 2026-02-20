@@ -1,19 +1,26 @@
-name: CI/CD → EC2
+name: CI/CD -> EC2
 
-# 推送 main 分支时触发
 on:
+  # Variable 1: change trigger branch here (default main)
   push:
     branches: [main]
+  # Optional manual trigger
+  workflow_dispatch:
 
 env:
+  # Variable 2: Docker image / container name
   IMAGE_NAME: auto-pipeline-starter
+  # Variable 3: build command
+  BUILD_CMD: npm run build
+  # Variable 4: test command (set empty string to skip)
+  TEST_CMD: npm run e2e
+  # Variable 5: host:container port mapping
+  PORT_MAP: 80:80
 
 jobs:
-  # ── Job 1: 构建 + E2E 测试 ────────────────────────────────────────────────
   ci:
-    name: Build & E2E
+    name: Build & Test
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -21,18 +28,22 @@ jobs:
       - name: Setup Node 20
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: "20"
+          cache: "npm"
 
       - name: Install dependencies
         run: npm ci
 
-      - name: TypeScript check + Vite build
-        run: npm run build
+      - name: Build
+        run: ${{ env.BUILD_CMD }}
 
-      - name: Run Cypress E2E (headless)
-        # start-server-and-test: preview → cypress run
-        run: npm run e2e
+      - name: Run tests (optional)
+        run: |
+          if [ -n "${{ env.TEST_CMD }}" ]; then
+            ${{ env.TEST_CMD }}
+          else
+            echo "TEST_CMD is empty, skip tests."
+          fi
 
       - name: Upload Cypress screenshots on failure
         if: failure()
@@ -40,13 +51,12 @@ jobs:
         with:
           name: cypress-screenshots
           path: cypress/screenshots
+          if-no-files-found: ignore
 
-  # ── Job 2: Docker build → SCP → SSH deploy ───────────────────────────────
   deploy:
     name: Docker Build & Deploy
     needs: ci
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -60,11 +70,6 @@ jobs:
 
       - name: Save image to tarball
         run: docker save $IMAGE_NAME:${{ github.sha }} | gzip > image.tar.gz
-
-      # ── 需要配置的 GitHub Secrets（见 README）──────────────────────────────
-      # EC2_HOST     : EC2 公网 IP 或域名
-      # EC2_USER     : SSH 用户，如 ubuntu / ec2-user
-      # EC2_SSH_KEY  : 私钥内容（PEM 格式，即 ~/.ssh/xxx.pem 的全文）
 
       - name: SCP image to EC2
         uses: appleboy/scp-action@v0.1.7
@@ -85,22 +90,16 @@ jobs:
             set -e
             cd ~/deploy
 
-            echo "📦 Loading Docker image..."
             docker load < image.tar.gz
-
-            echo "🔄 Replacing container..."
             docker stop ${{ env.IMAGE_NAME }} 2>/dev/null || true
-            docker rm   ${{ env.IMAGE_NAME }} 2>/dev/null || true
+            docker rm ${{ env.IMAGE_NAME }} 2>/dev/null || true
 
             docker run -d \
               --name ${{ env.IMAGE_NAME }} \
               --restart unless-stopped \
-              -p 80:80 \
+              -p ${{ env.PORT_MAP }} \
               ${{ env.IMAGE_NAME }}:${{ github.sha }}
 
-            echo "🧹 Pruning old images..."
             docker image prune -f
-
-            echo "✅ Deploy done. Checking health..."
             sleep 5
-            curl -sf http://localhost/ | head -c 100 && echo ""
+            curl -sf http://localhost/ >/dev/null
