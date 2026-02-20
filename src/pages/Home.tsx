@@ -12,6 +12,9 @@ export default function Home() {
         A production-ready template: Vite · React · TypeScript · Tailwind ·
         Zustand · TanStack Query · Cypress · Docker · GitHub Actions.
       </p>
+      <p className="text-gray-700 text-lg text-center font-medium">
+        🚀 Full Auto Success
+      </p>
       <div className="flex gap-4">
         <button
           data-cy="go-to-todos"
