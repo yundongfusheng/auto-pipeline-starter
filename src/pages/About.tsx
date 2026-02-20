@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+
 const stack = [
   { name: 'Vite 5', desc: '极速构建工具' },
   { name: 'React 18', desc: 'UI 框架，Concurrent Mode' },
@@ -32,6 +34,14 @@ export default function About() {
           </li>
         ))}
       </ul>
+      <div className="mt-10 text-center">
+        <Link
+          to="/"
+          className="inline-block bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors"
+        >
+          返回首页
+        </Link>
+      </div>
     </div>
   );
 }
