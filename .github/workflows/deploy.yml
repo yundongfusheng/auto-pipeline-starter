@@ -9,7 +9,7 @@ on:
 
 env:
   # Variable 2: Docker image / container name
-  IMAGE_NAME: auto-pipeline-starter
+  IMAGE_NAME: demo-web
   # Variable 3: build command
   BUILD_CMD: npm run build
   # Variable 4: test command (set empty string to skip)
@@ -90,6 +90,17 @@ jobs:
             set -e
             cd ~/deploy
 
+            HOST_PORT='${{ env.PORT_MAP }}'
+            HOST_PORT="${HOST_PORT%%:*}"
+            [ -n "$HOST_PORT" ] || HOST_PORT=80
+
+            # Free target host port if another container is occupying it.
+            PORT_HOLDER_IDS="$(docker ps -q --filter "publish=${HOST_PORT}")"
+            if [ -n "$PORT_HOLDER_IDS" ]; then
+              docker stop $PORT_HOLDER_IDS || true
+              docker rm $PORT_HOLDER_IDS || true
+            fi
+
             docker load < image.tar.gz
             docker stop ${{ env.IMAGE_NAME }} 2>/dev/null || true
             docker rm ${{ env.IMAGE_NAME }} 2>/dev/null || true
@@ -102,4 +113,4 @@ jobs:
 
             docker image prune -f
             sleep 5
-            curl -sf http://localhost/ >/dev/null
+            curl -sf "http://localhost:${HOST_PORT}/" >/dev/null
